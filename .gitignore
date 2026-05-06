@@ -1,0 +1,24 @@
+# Node.js
+node_modules/
+npm-debug.log*
+package-lock.json
+
+# Environment - REAL token байвал commit хийхгүй
+.env
+.env.local
+.env.*.local
+
+# Newman HTML report - CI-д үүсгэгддэг тул commit хийхгүй
+# (Хэрэв report-г commit хийхийг хүсвэл энэ мөрийг устга)
+# reports/
+
+# OS файлууд
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.suo
+*.user
