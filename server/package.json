@@ -1,0 +1,13 @@
+{
+  "name": "buteelt-lab14-server",
+  "version": "1.0.0",
+  "description": "Books API server for Buteelt Lab 14",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "dependencies": {
+    "express": "^4.18.4"
+  }
+}
