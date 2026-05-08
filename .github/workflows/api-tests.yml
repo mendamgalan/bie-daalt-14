@@ -1,0 +1,45 @@
+name: API tests
+
+on: [push, pull_request]
+
+jobs:
+  newman:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install server dependencies
+        run: cd server && npm install
+
+      - name: Start API server (background)
+        run: |
+          cd server
+          node index.js &
+          echo "Waiting for server to start..."
+          sleep 3
+          curl --retry 5 --retry-delay 2 --retry-connrefused http://localhost:3000/health
+
+      - name: Install Newman
+        run: npm install -g newman newman-reporter-htmlextra
+
+      - name: Run API tests
+        run: |
+          newman run postman/collection.json \
+            -e postman/env.ci.json \
+            --reporters cli,junit,htmlextra \
+            --reporter-junit-export reports/api.xml \
+            --reporter-htmlextra-export reports/api.html
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: api-test-report
+          path: reports/
