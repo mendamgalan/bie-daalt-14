@@ -1,0 +1,357 @@
+{
+  "info": {
+    "name": "Mendamgalan — Books API",
+    "_postman_id": "lab14-books-api-collection",
+    "description": "F.CSM311 Бие даалт 14 — Books API тест collection (Хувилбар 3)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" }
+  ],
+  "item": [
+    {
+      "name": "Books",
+      "item": [
+        {
+          "name": "Happy GET — List all books",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/books",
+            "description": "Бүх номын жагсаалт авах"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Pre-request: timestamp лог",
+                  "console.log('Request sent at:', new Date().toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response time < 1000ms', () => {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(1000);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is JSON', () => {",
+                  "  pm.response.to.have.header('Content-Type');",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('Response has data array and total', () => {",
+                  "  const d = pm.response.json();",
+                  "  pm.expect(d).to.have.property('data');",
+                  "  pm.expect(d).to.have.property('total');",
+                  "  pm.expect(d.data).to.be.an('array');",
+                  "  pm.expect(d.total).to.be.a('number');",
+                  "});",
+                  "",
+                  "pm.test('Each book has required fields', () => {",
+                  "  const d = pm.response.json();",
+                  "  d.data.forEach(book => {",
+                  "    pm.expect(book).to.have.property('id');",
+                  "    pm.expect(book).to.have.property('title');",
+                  "    pm.expect(book).to.have.property('author');",
+                  "    pm.expect(book.id).to.be.a('number');",
+                  "    pm.expect(book.title).to.be.a('string');",
+                  "  });",
+                  "});",
+                  "",
+                  "// Chain: эхний номын id-г хадгалах",
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.length > 0) {",
+                  "  pm.environment.set('firstBookId', json.data[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET by id — Single book",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/books/{{firstBookId}}",
+            "description": "Нэг номын дэлгэрэнгүй мэдээлэл — chain-ээр авсан id ашиглана"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Book has id, title, author, available fields', () => {",
+                  "  const d = pm.response.json();",
+                  "  pm.expect(d).to.have.property('id');",
+                  "  pm.expect(d).to.have.property('title');",
+                  "  pm.expect(d).to.have.property('author');",
+                  "  pm.expect(d).to.have.property('available');",
+                  "  pm.expect(d.available).to.be.a('boolean');",
+                  "});",
+                  "",
+                  "pm.test('Response time < 1000ms', () => {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(1000);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST create — New book",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/books",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"{{newBookTitle}}\", \"author\": \"{{newBookAuthor}}\", \"year\": 2024}"
+            },
+            "description": "Шинэ ном үүсгэх — pre-request script-аар random өгөгдөл үүсгэнэ"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Pre-request: random ном үүсгэх",
+                  "const titles = ['Design Patterns', 'The Mythical Man-Month', 'Code Complete', 'Refactoring'];",
+                  "const authors = ['GoF', 'Fred Brooks', 'Steve McConnell', 'Martin Fowler'];",
+                  "const idx = Math.floor(Math.random() * titles.length);",
+                  "pm.environment.set('newBookTitle', titles[idx] + ' ' + Date.now());",
+                  "pm.environment.set('newBookAuthor', authors[idx]);",
+                  "console.log('Creating book:', pm.environment.get('newBookTitle'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201 Created', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('New book has id assigned', () => {",
+                  "  const d = pm.response.json();",
+                  "  pm.expect(d).to.have.property('id');",
+                  "  pm.expect(d.id).to.be.a('number');",
+                  "  // Chain: устгах тестэд ашиглах",
+                  "  pm.environment.set('createdBookId', d.id);",
+                  "});",
+                  "",
+                  "pm.test('Created book title matches request', () => {",
+                  "  const d = pm.response.json();",
+                  "  const sentTitle = pm.environment.get('newBookTitle');",
+                  "  pm.expect(d.title).to.equal(sentTitle);",
+                  "});",
+                  "",
+                  "pm.test('Available defaults to true', () => {",
+                  "  const d = pm.response.json();",
+                  "  pm.expect(d.available).to.equal(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT update — Edit book",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/books/1",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"The Pragmatic Programmer 2nd Ed\", \"author\": \"Hunt & Thomas\", \"year\": 2019, \"available\": true}"
+            },
+            "description": "Номын мэдээллийг бүтэн шинэчлэх"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Title updated correctly', () => {",
+                  "  const d = pm.response.json();",
+                  "  pm.expect(d.title).to.equal('The Pragmatic Programmer 2nd Ed');",
+                  "});",
+                  "",
+                  "pm.test('Year is a number', () => {",
+                  "  const d = pm.response.json();",
+                  "  pm.expect(d.year).to.be.a('number');",
+                  "});",
+                  "",
+                  "pm.test('Id unchanged after update', () => {",
+                  "  const d = pm.response.json();",
+                  "  pm.expect(d.id).to.equal(1);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE — Remove created book",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/books/{{createdBookId}}",
+            "description": "POST-оор үүсгэсэн номыг устгах — chain тест"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 204 No Content', () => {",
+                  "  pm.response.to.have.status(204);",
+                  "});",
+                  "",
+                  "pm.test('Response body is empty', () => {",
+                  "  pm.expect(pm.response.text()).to.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Errors",
+      "item": [
+        {
+          "name": "Error — GET non-existent book (404)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/books/999999",
+            "description": "Байхгүй номын id-г хайхад 404 буцаах ёстой"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404 Not Found', () => {",
+                  "  pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test('Error response has error field', () => {",
+                  "  const d = pm.response.json();",
+                  "  pm.expect(d).to.have.property('error');",
+                  "  pm.expect(d.error).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Error — POST missing required fields (400)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/books",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"year\": 2024}"
+            },
+            "description": "title, author дутуу байхад 400 Bad Request буцаах ёстой"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400 Bad Request', () => {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Error message mentions required fields', () => {",
+                  "  const d = pm.response.json();",
+                  "  pm.expect(d).to.have.property('error');",
+                  "  pm.expect(d.error).to.include('required');",
+                  "});",
+                  "",
+                  "pm.test('Response time < 500ms for errors', () => {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(500);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Error — PUT non-existent book (404)",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/books/88888",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"Ghost Book\", \"author\": \"Nobody\"}"
+            },
+            "description": "Байхгүй номыг засахад 404 буцаах ёстой"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404 for update of missing book', () => {",
+                  "  pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/health",
+            "description": "API амьд эсэхийг шалгах"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Status field is ok', () => {",
+                  "  const d = pm.response.json();",
+                  "  pm.expect(d.status).to.equal('ok');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
